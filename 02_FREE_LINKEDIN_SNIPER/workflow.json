@@ -1,0 +1,114 @@
+{
+  "name": "Apollo AGI ISO: Free LinkedIn Cold Outreach Sniper",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Powered by Apollo AGI ISO :rocket:\n\nThis is a free Point-Solution provided by our engineering team.\n\nReady to secure your entire infrastructure? Unlock the full **N8N_ENTERPRISE_VAULT_CORE** (9 Enterprise-Grade Workflows including RAG Document Sync, Rate Limiting Firewalls, and Stripe RevOps) for just **$96**.\n\n[👉 Click Here to Upgrade to Enterprise Core](https://apollo-agi-iso.lemonsqueezy.com/checkout/buy/b7ac6b3e-ddf1-4cec-a73d-2d9e4fad01e3)",
+        "height": 250,
+        "width": 500,
+        "color": 6
+      },
+      "name": "Marketing Hook (Sticky Note)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        250,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "linkedin-sniper-ingress",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook (Profile Ingress)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        400
+      ],
+      "notesInFlow": true,
+      "notes": "Send JSON: { \"profile_text\": \"...\", \"my_product\": \"...\" }"
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-4-turbo-preview",
+        "options": {
+          "responseFormat": "jsonObject",
+          "temperature": 0.4
+        },
+        "messages": {
+          "messageValues": [
+            {
+              "role": "system",
+              "content": "You are an elite B2B Sales Development Representative (SDR). Your goal is to write a highly personalized, non-spammy cold email based on a prospect's LinkedIn profile. \n\nRULES:\n1. Maximum 4 sentences.\n2. NO buzzwords (do not use 'synergy', 'delve', 'unlock', 'elevate').\n3. Reference one specific achievement or role from their profile in the first sentence.\n4. Soft Call to Action (CTA) at the end.\n\nYou MUST return a valid JSON object strictly adhering to this schema: { \"subject_line\": \"string\", \"email_body\": \"string\" }."
+            },
+            {
+              "role": "user",
+              "content": "=Prospect's LinkedIn Profile:\n{{$json.body.profile_text}}\n\nMy Product/Service to pitch:\n{{$json.body.my_product}}"
+            }
+          ]
+        }
+      },
+      "name": "LLM Sniper (Copywriter)",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        500,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"success\",\n  \"data\": {\n    \"subject\": {{$json.message.content.subject_line}},\n    \"body\": {{$json.message.content.email_body}}\n  }\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        750,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook (Profile Ingress)": {
+      "main": [
+        [
+          {
+            "node": "LLM Sniper (Copywriter)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Sniper (Copywriter)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": false
+  },
+  "meta": {
+    "templateId": "apollo-agi-iso-free-02",
+    "version": "1.0.0"
+  }
+}
