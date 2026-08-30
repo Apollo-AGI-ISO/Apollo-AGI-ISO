@@ -1,0 +1,146 @@
+﻿{
+  "name": "Apollo AGI ISO: Free Meeting Distiller to Notion",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Powered by Apollo AGI ISO :rocket:\n\nThis is a free Point-Solution provided by our engineering team.\n\nReady to secure your entire infrastructure? Unlock the full **N8N_ENTERPRISE_VAULT_CORE** (9 Enterprise-Grade Workflows including RAG Document Sync, Rate Limiting Firewalls, and Stripe RevOps) for just **$96**.\n\n[👉 Click Here to Upgrade to Enterprise Core](https://apollo-agi-iso.lemonsqueezy.com/checkout/buy/d1cb2029-29f5-445d-8ee4-8794298ebfac)",
+        "height": 250,
+        "width": 500,
+        "color": 6
+      },
+      "name": "Marketing Hook (Sticky Note)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        250,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "meeting-transcript-ingress",
+        "options": {}
+      },
+      "name": "Webhook (Transcript Ingress)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        400
+      ],
+      "webhookId": "UUID-PLACEHOLDER"
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-4-turbo-preview",
+        "options": {
+          "responseFormat": "jsonObject"
+        },
+        "messages": {
+          "messageValues": [
+            {
+              "role": "system",
+              "content": "You are an elite Project Management AI. Analyze the meeting transcript and extract structured data. You MUST return a valid JSON object strictly adhering to this schema: { \"tldr\": \"string (2 sentences max)\", \"key_decisions\": [\"string\"], \"action_items\": [{ \"assignee\": \"string\", \"task\": \"string\", \"deadline\": \"string (or 'Not specified')\" }] }."
+            },
+            {
+              "role": "user",
+              "content": "=Raw Transcript:\n{{$json.body.transcript}}"
+            }
+          ]
+        }
+      },
+      "name": "LLM Cognitive Distiller",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        500,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "page",
+        "operation": "append",
+        "pageId": {
+          "__rl": true,
+          "value": "NOTION-PAGE-UUID",
+          "mode": "id"
+        },
+        "blockType": "heading_2",
+        "text": "=Meeting Summary: {{new Date().toISOString().split('T')[0]}}"
+      },
+      "name": "Notion (Header)",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [
+        750,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "page",
+        "operation": "append",
+        "pageId": {
+          "__rl": true,
+          "value": "NOTION-PAGE-UUID",
+          "mode": "id"
+        },
+        "blockType": "paragraph",
+        "text": "=TL;DR:\n{{$node[\"LLM Cognitive Distiller\"].json.message.content.tldr}}\n\nKey Decisions:\n{{$node[\"LLM Cognitive Distiller\"].json.message.content.key_decisions.join('\\n- ')}}\n\nAction Items:\n{{JSON.stringify($node[\"LLM Cognitive Distiller\"].json.message.content.action_items, null, 2)}}"
+      },
+      "name": "Notion (Append Summary)",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook (Transcript Ingress)": {
+      "main": [
+        [
+          {
+            "node": "LLM Cognitive Distiller",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Cognitive Distiller": {
+      "main": [
+        [
+          {
+            "node": "Notion (Header)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion (Header)": {
+      "main": [
+        [
+          {
+            "node": "Notion (Append Summary)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": false
+  },
+  "meta": {
+    "templateId": "apollo-agi-iso-free-01",
+    "version": "1.0.0"
+  }
+}
