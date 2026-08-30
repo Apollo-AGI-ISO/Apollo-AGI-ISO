@@ -1,0 +1,137 @@
+﻿{
+  "name": "Apollo AGI ISO: Free GitHub PR Reviewer",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Powered by Apollo AGI ISO :rocket:\n\nThis is a free Point-Solution provided by our engineering team.\n\nReady to secure your entire infrastructure? Unlock the full **N8N_ENTERPRISE_VAULT_CORE** (9 Enterprise-Grade Workflows including RAG Document Sync, Rate Limiting Firewalls, and Stripe RevOps) for just **$96**.\n\n[👉 Click Here to Upgrade to Enterprise Core](https://apollo-agi-iso.lemonsqueezy.com/checkout/buy/d1cb2029-29f5-445d-8ee4-8794298ebfac)",
+        "height": 250,
+        "width": 500,
+        "color": 6
+      },
+      "name": "Marketing Hook (Sticky Note)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        250,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "owner": "placeholder-owner",
+        "repository": "placeholder-repo",
+        "events": [
+          "pull_request"
+        ]
+      },
+      "name": "GitHub Trigger (PR Opened)",
+      "type": "n8n-nodes-base.githubTrigger",
+      "typeVersion": 1,
+      "position": [
+        250,
+        400
+      ],
+      "webhookId": "UUID-PLACEHOLDER"
+    },
+    {
+      "parameters": {
+        "url": "={{$json.body.pull_request.diff_url}}",
+        "options": {}
+      },
+      "name": "HTTP Request (Fetch Diff)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        450,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "model": "gpt-4-turbo-preview",
+        "messages": {
+          "messageValues": [
+            {
+              "role": "system",
+              "content": "You are a Principal Software Engineer doing a Code Review on a Pull Request. Review the provided git diff. Focus ONLY on: 1) Security vulnerabilities (hardcoded secrets, SQL injection) 2) Critical logic bugs. Do not comment on formatting or syntax. Output your review in markdown format suitable for a GitHub comment. If the code looks perfect, respond with: 'LGTM! 🚀 No critical security or logic issues found by Apollo AGI Reviewer.'"
+            },
+            {
+              "role": "user",
+              "content": "=Pull Request Diff:\n\n{{$json.data}}"
+            }
+          ]
+        }
+      },
+      "name": "LLM Security Audit",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        650,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "issue",
+        "operation": "createComment",
+        "owner": "={{$node[\"GitHub Trigger (PR Opened)\"].json.body.repository.owner.login}}",
+        "repository": "={{$node[\"GitHub Trigger (PR Opened)\"].json.body.repository.name}}",
+        "issueNumber": "={{$node[\"GitHub Trigger (PR Opened)\"].json.body.pull_request.number}}",
+        "body": "={{$json.message.content}}"
+      },
+      "name": "GitHub (Post Comment)",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [
+        850,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "GitHub Trigger (PR Opened)": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request (Fetch Diff)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request (Fetch Diff)": {
+      "main": [
+        [
+          {
+            "node": "LLM Security Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Security Audit": {
+      "main": [
+        [
+          {
+            "node": "GitHub (Post Comment)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": false
+  },
+  "meta": {
+    "templateId": "apollo-agi-iso-free-03",
+    "version": "1.0.0"
+  }
+}
